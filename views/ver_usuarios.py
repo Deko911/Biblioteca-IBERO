@@ -57,7 +57,7 @@ class VerUsuariosView(View):
             if len(usuario.prestamos) == 0:
                 ctk.CTkLabel(info_usuario, text="No tiene libros prestados", font=fuentes["details_font"]).pack(anchor='w', padx=20)
             
-            libros = ', '.join([libro.nombre for libro in usuario.prestamos])
+            libros = ', '.join([libro.nombre for libro in usuario.prestamos.values()])
             libros_label = ctk.CTkLabel(info_usuario, text=libros, font=fuentes["details_font"], justify='left')
             libros_label.pack(anchor='w', padx=20)
             libros_label.configure(wraplength=self.app.width - 400)

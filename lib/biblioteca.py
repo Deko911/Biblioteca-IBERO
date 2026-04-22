@@ -29,7 +29,7 @@ class Usuario:
     def __init__(self, nombre: str, contrasenia: str):
         self.nombre = nombre
         self._contrasenia = contrasenia
-        self.prestamos: list[Libro] = []
+        self.prestamos: dict[int, Libro] = {}
         
 class UsuarioSeguro:
     def __init__(self, usuario: Usuario):
@@ -39,6 +39,7 @@ class UsuarioSeguro:
 class Biblioteca:
     def __init__(self):
         self._libros: list[Libro] = []
+        self._libros_id: dict[int, Libro] = {}
         self._usuarios: list[Usuario] = []
         self._contador = 0
         
@@ -59,11 +60,10 @@ class Biblioteca:
     def agregar_libro(self, libro: LibroInput):
         nuevo_libro = self.crear_libro(libro)
         self._libros.append(nuevo_libro)
+        self._libros_id[nuevo_libro.id] = nuevo_libro
         
     def obtener_libro(self, id=0):
-        ids = [libro.id for libro in self._libros] 
-        idx = ids.index(id)
-        return self._libros[idx]
+        return self._libros_id[id]
     
     def editar_libro(self, nuevo_libro: LibroInput, id=0):
         libro = self.obtener_libro(id)
@@ -74,7 +74,8 @@ class Biblioteca:
         if id == -1: return self._libros.pop()
         ids = [libro.id for libro in self._libros]
         idx = ids.index(id)
-        return self._libros.pop(idx)
+        libro = self._libros.pop(idx)
+        return self._libros_id.pop(libro.id)
     
     def registrar_usuario(self, usuario: Usuario):
         self._usuarios.append(usuario)
@@ -98,7 +99,7 @@ class Biblioteca:
         if not libro.libre: return False
         
         libro.libre = False
-        usuario.prestamos.append(libro)
+        usuario.prestamos[libro.id] = libro
         
         return True
     
@@ -107,15 +108,12 @@ class Biblioteca:
         if libro is None: return False
         
         libro.libre = True
-        usuario.prestamos.remove(libro)
+        usuario.prestamos.pop(libro.id)
         
         return True
     
     def buscar_prestamo(self, usuario: Usuario, libro_id: int):
-        for libro in usuario.prestamos:
-            if libro.id == libro_id:
-                return libro
-        return None
+        return usuario.prestamos.get(libro_id)
     
     def __str__(self) -> str:
         return f"Biblioteca Ibero \n Libros: \n {"\n ".join([f"- {libro}" for libro in self._libros])}"
