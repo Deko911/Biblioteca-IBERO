@@ -1,12 +1,12 @@
 
 class Libro:
-    def __init__(self, id: int, nombre: str, autor: str, año: int, descripcion: str):
+    def __init__(self, id: int, nombre: str, autor: str, año: int, descripcion: str, libre: bool):
         self.id = id
         self.nombre = nombre
         self.autor = autor
         self.año = año
         self.descripcion = descripcion
-        self.libre = True
+        self.libre = libre
         
     def __str__(self) -> str:
         estado = "Disponible" if self.libre else "Prestado"
@@ -26,13 +26,21 @@ class LibroInput:
         self.descripcion = descripcion
         
 class Usuario:
-    def __init__(self, nombre: str, contrasenia: str):
+    def __init__(self, id: int, nombre: str, contraseña: str):
+        self.id = id
         self.nombre = nombre
-        self._contrasenia = contrasenia
+        self._contraseña = contraseña
+        self.prestamos: dict[int, Libro] = {}
+        
+class UsuarioInput:
+    def __init__(self, nombre: str, contraseña: str):
+        self.nombre = nombre
+        self._contraseña = contraseña
         self.prestamos: dict[int, Libro] = {}
         
 class UsuarioSeguro:
     def __init__(self, usuario: Usuario):
+        self.id = usuario.id
         self.nombre = usuario.nombre
         self.prestamos = usuario.prestamos
 
@@ -40,12 +48,13 @@ class Biblioteca:
     def __init__(self):
         self._libros: list[Libro] = []
         self._libros_id: dict[int, Libro] = {}
-        self._usuarios: list[Usuario] = []
+        self._usuarios: dict[int, Usuario] = {}
         self._contador = 0
+        self._contador_usuario = 0
         
     @property
     def usuarios(self): 
-        usuarios = [UsuarioSeguro(usuario) for usuario in self._usuarios]
+        usuarios = [UsuarioSeguro(usuario) for usuario in self._usuarios.values()]
         return usuarios
 
     @property
@@ -53,7 +62,7 @@ class Biblioteca:
         return self._libros
         
     def crear_libro(self, input: LibroInput):
-        libro = Libro(self._contador, input.nombre, input.autor, input.año, input.descripcion)
+        libro = Libro(self._contador, input.nombre, input.autor, input.año, input.descripcion, True)
         self._contador += 1
         return libro
         
@@ -77,19 +86,22 @@ class Biblioteca:
         libro = self._libros.pop(idx)
         return self._libros_id.pop(libro.id)
     
-    def registrar_usuario(self, usuario: Usuario):
-        self._usuarios.append(usuario)
+    def registrar_usuario(self, input: UsuarioInput):
+        usuario = Usuario(self._contador_usuario, input.nombre, input._contraseña)
+        self._usuarios[self._contador_usuario] = usuario
+        self._contador_usuario += 1
+        return usuario
         
     def ingresar_usuario(self, nombre: str, contraseña: str):
-        usuarios = [usuario.nombre for usuario in self._usuarios]
-        idx = 0
-        try:
-            idx = usuarios.index(nombre)
-        except:
+        usuario = None
+        for u in self._usuarios.values():
+            if u.nombre == nombre:
+                usuario = u
+                
+        if usuario == None:
             return None
         
-        usuario = self._usuarios[idx]
-        if usuario._contrasenia != contraseña:
+        if usuario._contraseña != contraseña:
             return None
         
         return usuario

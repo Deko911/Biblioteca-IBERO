@@ -1,6 +1,6 @@
 import customtkinter as ctk
 
-from lib.biblioteca import Biblioteca, Usuario
+from lib.biblioteca import Biblioteca, UsuarioInput
 from lib.config import fuentes
 
 from views.view import View
@@ -69,9 +69,9 @@ class RegistroView(View):
             enviar_popup(self.app,"Las contraseñas no coinciden.")
             return  
         
-        usuario = Usuario(nombre, contraseña1)
+        usuarioInput = UsuarioInput(nombre, contraseña1)
         
-        self.biblioteca.registrar_usuario(usuario)
+        usuario = self.biblioteca.registrar_usuario(usuarioInput)
         self.app.usuario = usuario
         
         enviar_popup(self.app, f"Usuario '{nombre}' creado exitosamente.", False)

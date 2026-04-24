@@ -1,21 +1,21 @@
 import customtkinter as ctk
 
-from lib.biblioteca import Biblioteca, Usuario
+from lib.biblioteca import Biblioteca, UsuarioInput
 from lib.biblioteca import LibroInput
 from app import App
 
 biblioteca = Biblioteca()
 
-admin = Usuario("admin", "admin")
+admin = UsuarioInput("admin", "admin")
 biblioteca.registrar_usuario(admin)  
 
-usuario1 = Usuario("Diego", "diego123")
+usuario1 = UsuarioInput("Diego", "diego123")
 biblioteca.registrar_usuario(usuario1)
 
-usuario2 = Usuario('Andres', 'andres123')
+usuario2 = UsuarioInput('Andres', 'andres123')
 biblioteca.registrar_usuario(usuario2)
 
-usuario3 = Usuario('Juan', 'juan123')
+usuario3 = UsuarioInput('Juan', 'juan123')
 biblioteca.registrar_usuario(usuario3)
 
 libro1 = LibroInput("Cien años de soledad", "Gabriel García Márquez", 1967, "Una novela que narra la historia de la familia Buendía a lo largo de varias generaciones en el pueblo ficticio de Macondo. La obra es conocida por su estilo de realismo mágico, donde lo fantástico se mezcla con lo cotidiano, y aborda temas como el amor, la soledad, el poder y la historia de América Latina.")
