@@ -94,7 +94,7 @@ class DetallesLibroView(View):
         if not resultado:
             enviar_popup(self.app, "El libro ya ha sido prestado.")
             return
-        self.generar_ui()
+        self.app.actualizar_frames()
     
     def ver_libro(self, libro: Libro):
         self.libro = libro
