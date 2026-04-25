@@ -110,6 +110,10 @@ class Biblioteca:
     def buscar_prestamo(self, usuario: Usuario, libro_id: int):
         return usuario.prestamos.get(libro_id)
     
+    def buscar_libros(self, nombre: str):
+        nombre = nombre.lower()
+        return [libro for libro in self._libros if libro.nombre.lower().startswith(nombre)]
+    
     def __str__(self) -> str:
         return f"Biblioteca Ibero \n Libros: \n {"\n ".join([f"- {libro}" for libro in self._libros])}"
     

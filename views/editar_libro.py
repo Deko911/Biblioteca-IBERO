@@ -117,6 +117,7 @@ class EditarLibroView(View):
         self.libro = self.biblioteca.editar_libro(libro_input, self.libro.id)
         enviar_popup(self.app, "Libro modificado exitosamente", False)
         
+        self.app.actualizar_frames()
         self.app.pantalla_principal()
         
     def editar_libro(self, libro: Libro):

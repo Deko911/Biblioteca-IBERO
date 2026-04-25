@@ -10,6 +10,34 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from app import App
+    
+class LibroCard(ctk.CTkFrame):
+    def __init__(self, parent: ctk.CTkScrollableFrame, libro: Libro, row=0, column=0, pady=(0, 0), padx=(0, 0), wraplength=0, icono=None):
+        super().__init__(parent, fg_color='#333333')
+        self.grid(row=row, column=column, sticky="nsew", pady=pady, padx=padx)
+        
+        self.nombre = ctk.CTkLabel(self, text=f"Nombre: {libro.nombre}", font=fuentes["preview_name_font"], wraplength=wraplength, justify='left')
+        self.nombre.pack(pady=(10, 0))
+        
+        self.imagen = ctk.CTkLabel(self, image=icono, text='')
+        self.imagen.pack()
+        
+        self.autor = ctk.CTkLabel(self, text=f"Autor: {libro.autor}", font=fuentes["preview_autor_font"], wraplength=wraplength - 10, justify='left')
+        self.autor.pack()
+        
+        self.visible = True
+        
+    def actualizar(self, libro: Libro, wraplength=0):
+        self.nombre.configure(text=f"Nombre: {libro.nombre}", wraplength=wraplength)
+        self.autor.configure(text=f"Autor: {libro.autor}", wraplength=wraplength)
+        
+    def cambiar_visibilidad(self, mostrar: bool):
+        self.visible = mostrar
+        if mostrar:
+            self.grid()
+        else:
+            self.grid_remove()
+        
 
 class VerLibrosView(View): 
 
@@ -17,10 +45,17 @@ class VerLibrosView(View):
         super().__init__(parent, controller, biblioteca)
         self.app = controller
         self.biblioteca = biblioteca
+        self.libros_ui: list[LibroCard] = []
         
         self.frame = None
+        self.libros_info = None
+        self.columnas = 0
         
         self.libro_icono = ctk.CTkImage(imagenes['libro_icono_light'], imagenes['libro_icono_dark'], (100, 100))
+        
+        self.barra_busqueda = None
+        self.texto_busqueda = ""
+        self.resultados = self.biblioteca.libros
         
         self.generar_ui()
         
@@ -33,34 +68,87 @@ class VerLibrosView(View):
         label = ctk.CTkLabel(self.frame, text="Ver Libros", font=fuentes["title_font"])
         label.pack(pady=20)
         
+        self.barra_busqueda = ctk.CTkEntry(self.frame, placeholder_text="Buscar por nombre de libro...", font=fuentes["details_font"])
+        self.barra_busqueda.insert(0, self.texto_busqueda)
+        self.barra_busqueda.pack(pady=(0, 10), padx=20, fill='x')
+        self.barra_busqueda.bind("<KeyRelease>", self.on_busqueda_cambiada)
+        self.barra_busqueda.focus()
+        
+        self.libros_info = ctk.CTkLabel(self.frame, font=fuentes["details_font"])
+        self.libros_info.pack()
+        if len(self.resultados) > 20:
+            self.libros_info.configure(text=f"Se encontraron {len(self.biblioteca.libros)} libros, resultados limitados a 20.")
+        elif len(self.resultados) == 0:
+            self.libros_info.configure(text="No se encontraron libros.")
+        else:
+            self.libros_info.configure(text="")
+        
         num_cols =  max(1, self.app.width // 400)
-        
+        self.columnas = num_cols
         max_width = (self.app.width - 400) // num_cols
-        
         
         libros_grid = ctk.CTkScrollableFrame(self.frame)
         libros_grid.pack(pady=5, fill='both', expand=True)
-        
         
         for col in range(num_cols):
             libros_grid.grid_columnconfigure(col, weight=1, uniform="col")
             
         #Vista limitada a 20 libros
-        for i, libro in enumerate(self.biblioteca.libros[:20]):
-            libro_frame = ctk.CTkFrame(libros_grid, fg_color='#333333')
+        for i, libro in enumerate(self.resultados[:20]):
             pady = (10, 10) if i // num_cols == 0 else (0, 10)
-            libro_frame.grid(row=i // num_cols, column=i % num_cols, sticky="nsew", pady=pady, padx=5)
-            ctk.CTkLabel(libro_frame, text=f"Nombre: {libro.nombre}", font=fuentes["preview_name_font"], wraplength=max_width - 10, justify='left').pack(pady=(10, 0))
-            ctk.CTkLabel(libro_frame, image=self.libro_icono, text='').pack()
-            ctk.CTkLabel(libro_frame, text=f"Autor: {libro.autor}", font=fuentes["preview_autor_font"], wraplength=max_width - 10, justify='left').pack()
+            libro_frame = LibroCard(libros_grid, libro, row=i // num_cols, column=i % num_cols, pady=pady, padx=5, wraplength=max_width - 10, icono=self.libro_icono)
             self.detectar_hover(libro_frame, libro)
-            
-            
+            self.libros_ui.append(libro_frame)
+    
+    def actualizar_frame(self):
+        self.actualizar_resultados()
+        num_cols =  max(1, self.app.width // 400)
+        if not num_cols == self.columnas:
+            self.columnas = num_cols
+            self.generar_ui()
+            return
+        
+        if self.libros_info is None:
+            return
+        
+        if len(self.resultados) > 20:
+            self.libros_info.configure(text=f"Se encontraron {len(self.biblioteca.libros)} libros, resultados limitados a 20.")
+        elif len(self.resultados) == 0:
+            self.libros_info.configure(text="No se encontraron libros.")
+        else:
+            self.libros_info.configure(text="")
+        
+        for i, libro_card in enumerate(self.libros_ui):
+            if i >= len(self.resultados):
+                libro_card.cambiar_visibilidad(False)
+            else: 
+                libro = self.resultados[i]
+                libro_card.actualizar(libro)
+                libro_card.cambiar_visibilidad(True)
+                self.detectar_hover(libro_card, libro)
+        
+   
     def detectar_hover(self, frame: ctk.CTkBaseClass, libro: Libro):
         for widget in [frame] + frame.winfo_children():
+            widget.unbind("<Enter>")
+            widget.unbind("<Leave>")
+            widget.unbind("<Button-1>")
             widget.bind("<Enter>", lambda _: hover_libro(frame))
             widget.bind("<Leave>", lambda _: unhover_libro(frame))
             widget.bind("<Button-1>", lambda _: click_libro(libro, self.app))
+    
+    def actualizar_resultados(self):
+        if self.barra_busqueda is None:
+            return
+        texto = self.barra_busqueda.get()
+        self.texto_busqueda = texto
+        if texto.strip() == "":
+            self.resultados = self.biblioteca.libros
+        else:
+            self.resultados = self.biblioteca.buscar_libros(texto)
+            
+    def on_busqueda_cambiada(self, event=None):
+        self.actualizar_frame()
     
 def hover_libro(frame):
     frame.configure(fg_color='#222222')
