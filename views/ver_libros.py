@@ -53,6 +53,7 @@ class VerLibrosView(View):
         
         self.libro_icono = ctk.CTkImage(imagenes['libro_icono_light'], imagenes['libro_icono_dark'], (100, 100))
         
+        self.libros_grid = None
         self.barra_busqueda = None
         self.texto_busqueda = ""
         self.resultados = self.biblioteca.libros
@@ -87,16 +88,16 @@ class VerLibrosView(View):
         self.columnas = num_cols
         max_width = (self.app.width - 400) // num_cols
         
-        libros_grid = ctk.CTkScrollableFrame(self.frame)
-        libros_grid.pack(pady=5, fill='both', expand=True)
+        self.libros_grid = ctk.CTkScrollableFrame(self.frame)
+        self.libros_grid.pack(pady=5, fill='both', expand=True)
         
         for col in range(num_cols):
-            libros_grid.grid_columnconfigure(col, weight=1, uniform="col")
+            self.libros_grid.grid_columnconfigure(col, weight=1, uniform="col")
             
         #Vista limitada a 20 libros
         for i, libro in enumerate(self.resultados[:20]):
             pady = (10, 10) if i // num_cols == 0 else (0, 10)
-            libro_frame = LibroCard(libros_grid, libro, row=i // num_cols, column=i % num_cols, pady=pady, padx=5, wraplength=max_width - 10, icono=self.libro_icono)
+            libro_frame = LibroCard(self.libros_grid, libro, row=i // num_cols, column=i % num_cols, pady=pady, padx=5, wraplength=max_width - 10, icono=self.libro_icono)
             self.detectar_hover(libro_frame, libro)
             self.libros_ui.append(libro_frame)
     
@@ -108,8 +109,10 @@ class VerLibrosView(View):
             self.generar_ui()
             return
         
-        if self.libros_info is None:
+        if self.libros_info is None or self.libros_grid is None:
             return
+        
+        self.libros_grid._parent_canvas.yview_moveto(0)
         
         if len(self.resultados) > 20:
             self.libros_info.configure(text=f"Se encontraron {len(self.biblioteca.libros)} libros, resultados limitados a 20.")

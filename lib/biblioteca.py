@@ -2,10 +2,11 @@ from models.usuarios import UsuarioModel
 from models.libros import LibroModel
 from models.prestamos import PrestamoModel
 from lib.tipos import *
+from lib.libro_arbol import LibroArbol
 
 class Biblioteca:
     def __init__(self):
-        self._libros: list[Libro] = []
+        self._libros = LibroArbol()
         self._libros_id: dict[int, Libro] = {}
         self._usuarios: dict[int, Usuario] = {}
         
@@ -18,7 +19,7 @@ class Biblioteca:
 
     @property
     def libros(self):
-        return self._libros
+        return self._libros.buscar_libro_por_sufijo("")
     
     def cargar_bd(self):
         usuarios = UsuarioModel.obtener_usuarios()
@@ -32,7 +33,7 @@ class Biblioteca:
             self._usuarios[usuario.id] = usuario
             
         for libro in libros:
-            self._libros.append(libro)
+            self._libros.insertar_libro(libro)
             self._libros_id[libro.id] = libro
             
         for (usuario_id, libro_id) in prestamos:
@@ -48,7 +49,7 @@ class Biblioteca:
         
     def agregar_libro(self, libro: LibroInput):
         nuevo_libro = self.crear_libro(libro)
-        self._libros.append(nuevo_libro)
+        self._libros.insertar_libro(nuevo_libro)
         self._libros_id[nuevo_libro.id] = nuevo_libro
         
     def obtener_libro(self, id=0):
@@ -56,19 +57,20 @@ class Biblioteca:
     
     def editar_libro(self, nuevo_libro: LibroInput, id=0):
         libro = self.obtener_libro(id)
+        anterior_libro = Libro(id, libro.nombre, libro.autor, libro.año, libro.descripcion, libro.libre)
+        
         libro.actualizar_libro(nuevo_libro)
+        self._libros.editar_libro(anterior_libro, libro)
         LibroModel.editar_libro(libro)
         return libro
     
-    def eliminar_libro(self, id=-1):
-        if id == -1: return self._libros.pop()
-        ids = [libro.id for libro in self._libros]
-        idx = ids.index(id)
-        libro = self._libros.pop(idx)
+    def eliminar_libro(self, id):
+        libro = self._libros_id.pop(id)
+        self._libros.eliminar_libro(libro)
         if not LibroModel.eliminar_libro(libro.id):
             raise Exception("Error al eliminar libros de la base de datos")
         
-        return self._libros_id.pop(libro.id)
+        return libro
     
     def registrar_usuario(self, input: UsuarioInput):
         usuario = UsuarioModel.crear_usuario(input)
@@ -111,11 +113,10 @@ class Biblioteca:
         return usuario.prestamos.get(libro_id)
     
     def buscar_libros(self, nombre: str):
-        nombre = nombre.lower()
-        return [libro for libro in self._libros if libro.nombre.lower().startswith(nombre)]
+        return self._libros.buscar_libro_por_sufijo(nombre)
     
     def __str__(self) -> str:
-        return f"Biblioteca Ibero \n Libros: \n {"\n ".join([f"- {libro}" for libro in self._libros])}"
+        return f"Biblioteca Ibero \n Libros: \n {"\n ".join([f"- {libro}" for libro in self._libros_id.values()])}"
     
 def formatear_descripcion(descripcion: str):
     lineas = descripcion.splitlines()
